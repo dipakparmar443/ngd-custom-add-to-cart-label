@@ -5,10 +5,10 @@ Donate link: https://www.paypal.me/dipakparmar443/
 Author: Dipakkumar Parmar
 Author URI: https://profiles.wordpress.org/dipakparmar443/
 Tags: woocommerce, add to cart, button label, customize, cart text
-Requires at least: 5.0
+Requires at least: 6.7
 Tested up to: 6.8
 Stable tag: 1.1
-Requires PHP: 7.2
+Requires PHP: 7.4
 Tested up to PHP: 8.3
 WC requires at least: 7.1
 WC tested up to: 10.1.2
@@ -45,9 +45,9 @@ WooCommerce – Custom "Add To Cart" labels on single product pages (per product
 = Features =
 * Customize "Add to Cart" labels for each WooCommerce product type.
 * Different labels on archive/shop pages and single product pages.
-* Compatible with latest WooCommerce (4.0.0 and up).
-* Compatible with WordPress 5.0+ up to 6.8.
-* Works with PHP 7.2 – 8.3.
+* Compatible with latest WooCommerce (7.1 or higher).
+* Compatible with WordPress 6.7 or higher
+* Works with PHP 7.4 or higher
 
 == Installation ==
 
@@ -82,6 +82,6 @@ Yes, this plugin is 100% free and open source.
 * Initial release.
 
 = 1.1 =
-* Updated compatibility with WooCommerce 10.1.2 and WordPress 6.8.
-* Improved PHP compatibility (7.2 – 8.3).
+* Updated compatibility with WooCommerce 10.1.2 and WordPress 6.8.2.
+* Improved PHP compatibility 7.4 or higher
 * Minor bug fixes.
