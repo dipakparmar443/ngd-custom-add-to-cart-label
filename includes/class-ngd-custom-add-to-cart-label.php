@@ -1,268 +1,281 @@
 <?php
-/**
- * Class for Custom Text Field support.
- *
- * @package WordPress
- */
+// Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
-// If check class exists.
-if ( ! class_exists( 'WC_NGD_Custom_Add_To_Cart_Label' ) ) {
+if ( ! class_exists( 'NGD_Custom_Add_To_Cart_For_Woocommerce_Label' ) ) {
 
-	/**
-	 * Declare class.
-	 */
-	class WC_NGD_Custom_Add_To_Cart_Label {
+	class NGD_Custom_Add_To_Cart_For_Woocommerce_Label {
 
-		/**
-		 * Calling construct.
-		 */
 		public function __construct() {
-			
-			/**
-			 * Check if WooCommerce is active
-			 **/
+			// Only run when WooCommerce is active
+			if ( class_exists( 'WooCommerce' ) ) {
+				// Settings tab
+				add_filter( 'woocommerce_settings_tabs_array', array( $this, 'add_custom_tab' ), 50 );
+				add_action( 'woocommerce_settings_tabs_ngd_catcl_for_woo_custom_tab', array( $this, 'tab_content' ) );
+				add_action( 'woocommerce_update_options_ngd_catcl_for_woo_custom_tab', array( $this, 'save_settings' ) );
 
-			if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
-				//add_action( 'admin_init', array( $this, 'wc_ngd_custom_add_to_cart_label_admin_init_fields') );
-				//add_action( 'admin_menu', array( $this, 'wc_ngd_custom_add_to_cart_label_register_sub_menu') );
-				add_filter( 'woocommerce_get_sections_products', array( $this, 'wc_ngd_custom_add_to_cart_label_section' ) );
+				// Text filters (allow 2 args where available)
+				add_filter( 'woocommerce_product_single_add_to_cart_text', array( $this, 'change_add_to_cart_text' ), 10, 2 );
+				add_filter( 'woocommerce_product_add_to_cart_text', array( $this, 'change_add_to_cart_text' ), 10, 2 );
 
-				add_filter( 'woocommerce_product_add_to_cart_text', array( $this, 'wc_ngd_custom_add_to_cart_label_text' ) );
-				add_filter( 'woocommerce_product_single_add_to_cart_text', array( $this, 'wc_ngd_custom_add_to_cart_label_text' ) );
-				add_filter( 'woocommerce_booking_single_add_to_cart_text', array( $this, 'wc_ngd_custom_add_to_cart_label_text' ) );
+				// Loop (archive / shop / shortcodes)
+				add_filter( 'woocommerce_loop_add_to_cart_link', array( $this, 'change_loop_add_to_cart_link' ), 10, 3 );
 
-				add_filter( 'woocommerce_get_settings_products', array( $this, 'wc_ngd_settings' ), 10, 2 );
+				// WooCommerce Blocks (Gutenberg)
+				add_filter( 'woocommerce_blocks_product_grid_item_html', array( $this, 'change_block_button_text' ), 10, 3 );
 
+				// Backwards compatibility / bookings, etc (some plugins use custom filters)
+				add_filter( 'woocommerce_booking_single_add_to_cart_text', array( $this, 'change_add_to_cart_text' ) );
 			}
-
 		}
 
-		public function wc_ngd_settings( $settings, $current_section ) {
-			/**
-		     * Check the current section is what we want
-		     **/
+		/* ---------------------------
+		 * Settings: tab + fields
+		 * --------------------------- */
 
-	    	if ( 'wc_ngd_custom_section' === $current_section ) {
+		public function add_custom_tab( $tabs ) {
+			$tabs['ngd_catcl_for_woo_custom_tab'] = __( 'NGD Custom Add to Cart Label for WooCommerce', 'ngd-custom-add-to-cart-label' );
+			return $tabs;
+		}
 
-		        $wc_ngd_custom_section[] = array( 'title' => __( 'Change the "Add to cart" button label on single product pages (per product type)', 'woocommerce' ), 'type' => 'title', 'id' => 'wc_ngd_change' );
+		public function tab_content() {
+			woocommerce_admin_fields( $this->get_settings() );
+		}
 
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Simple products', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label shown on single product page of simple product type',
-		                'id'       => 'ngd_simple_button_text_single',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
+		public function save_settings() {
+			woocommerce_update_options( $this->get_settings() );
+		}
 
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Grouped products', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label shown on single product page of grouped product type',
-		                'id'       => 'ngd_grouped_button_text_single',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
+		public function get_settings() {
+			$settings = array(
+				'section_title' => array(
+					'title' => __( 'NGD Custom Add to Cart Label for WooCommerce', 'ngd-custom-add-to-cart-label' ),
+					'type'  => 'title',
+					'desc'  => __( 'Change the "Add to cart" button labels for different product types.', 'ngd-custom-add-to-cart-label' ),
+					'id'    => 'ngd_catcl_for_woo_labels_section'
+				),
 
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'External products', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label shown on single product page of external product type',
-		                'id'       => 'ngd_external_button_text_single',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
+				// Single product page labels
+				'ngd_catcl_for_woo_simple_button_text_single' => array(
+					'title'       => __( 'Simple product (single)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Add to cart',
+					'id'          => 'ngd_catcl_for_woo_simple_button_text_single',
+				),
+				'ngd_catcl_for_woo_grouped_button_text_single' => array(
+					'title'       => __( 'Grouped product (single)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Add to cart',
+					'id'          => 'ngd_catcl_for_woo_grouped_button_text_single',
+				),
+				'ngd_catcl_for_woo_external_button_text_single' => array(
+					'title'       => __( 'External product (single)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Buy product',
+					'id'          => 'ngd_catcl_for_woo_external_button_text_single',
+				),
+				'ngd_catcl_for_woo_variable_button_text_single' => array(
+					'title'       => __( 'Variable product (single)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Select options',
+					'id'          => 'ngd_catcl_for_woo_variable_button_text_single',
+				),
+				'ngd_catcl_for_woo_booking_button_text_single' => array(
+					'title'       => __( 'Bookable product (single)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Book now',
+					'id'          => 'ngd_catcl_for_woo_booking_button_text_single',
+				),
+				'ngd_catcl_for_woo_subs_button_text_single' => array(
+					'title'       => __( 'Subscription product (single)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Sign up now',
+					'id'          => 'ngd_catcl_for_woo_subs_button_text_single',
+				),
+				'ngd_catcl_for_woo_subs_var_button_text_single' => array(
+					'title'       => __( 'Variable subscription (single)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Choose plan',
+					'id'          => 'ngd_catcl_for_woo_subs_var_button_text_single',
+				),
 
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Variable products', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label shown on single product page of variable product type',
-		                'id'       => 'ngd_variable_button_text_single',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
+				// Archive page labels
+				'ngd_catcl_for_woo_simple_button_text' => array(
+					'title'       => __( 'Simple product (archive)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Add to cart',
+					'id'          => 'ngd_catcl_for_woo_simple_button_text',
+				),
+				'ngd_catcl_for_woo_grouped_button_text' => array(
+					'title'       => __( 'Grouped product (archive)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'View products',
+					'id'          => 'ngd_catcl_for_woo_grouped_button_text',
+				),
+				'ngd_catcl_for_woo_external_button_text' => array(
+					'title'       => __( 'External product (archive)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Buy product',
+					'id'          => 'ngd_catcl_for_woo_external_button_text',
+				),
+				'ngd_catcl_for_woo_variable_button_text' => array(
+					'title'       => __( 'Variable product (archive)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Select options',
+					'id'          => 'ngd_catcl_for_woo_variable_button_text',
+				),
+				'ngd_catcl_for_woo_booking_button_text' => array(
+					'title'       => __( 'Bookable product (archive)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Book now',
+					'id'          => 'ngd_catcl_for_woo_booking_button_text',
+				),
+				'ngd_catcl_for_woo_subs_button_text' => array(
+					'title'       => __( 'Subscription product (archive)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Subscribe',
+					'id'          => 'ngd_catcl_for_woo_subs_button_text',
+				),
+				'ngd_catcl_for_woo_subs_var_button_text' => array(
+					'title'       => __( 'Variable subscription (archive)', 'ngd-custom-add-to-cart-label' ),
+					'type'        => 'text',
+					'placeholder' => 'Choose plan',
+					'id'          => 'ngd_catcl_for_woo_subs_var_button_text',
+				),
 
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Bookable products', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label shown on single product page of bookable product type',
-		                'id'       => 'ngd_booking_button_text_single',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
+				'section_end' => array(
+					'type' => 'sectionend',
+					'id'   => 'ngd_catcl_for_woo_custom_cart_labels_section'
+				),
+			);
 
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Subscription products', 'woocommerce-subscriptions' ),
-		                'desc' => 'This will change the "add to cart" label shown on single product page of subscription product type',
-		                'id'       => 'ngd_subs_button_text_single',
-		                'type'     => 'text',
-		                'placeholder' => 'Sign up now',
-		                'css'      => 'min-width:350px;',
-		            );
+			return $settings;
+		}
 
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Variable subscription products', 'woocommerce-subscriptions' ),
-		                'desc' => 'This will change the "add to cart" label shown on the single product page of variable subscription product type',
-		                'id'       => 'ngd_subs_var_button_text_single',
-		                'type'     => 'text',
-		                'placeholder' => 'Sign up now',
-		                'css'      => 'min-width:350px;',
-		            );
 
-		        $wc_ngd_custom_section[] = array( 'type' => 'sectionend', 'id' => 'wc_ngd_change' );
+		/* ---------------------------
+		 * Core text replacement logic
+		 * --------------------------- */
 
-		        $wc_ngd_custom_section[] = array( 'title' => __( 'Change the "Add to cart" button label on archive / shop page (per product type)', 'woocommerce' ), 'type' => 'title', 'id' => 'wc_ngd_change' );
-
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Simple products (archive)', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label on simple products that are shown on the archive page',
-		                'id'       => 'ngd_simple_button_text',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
-
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Grouped products (archive)', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label on grouped products that are shown on the archive page',
-		                'id'       => 'ngd_grouped_button_text',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
-
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'External products (archive)', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label on external products that are shown on the archive page',
-		                'id'       => 'ngd_external_button_text',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
-
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Variable products (archive)', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label on variable products that are shown on the archive page',
-		                'id'       => 'ngd_variable_button_text',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
-
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Bookable products (archive)', 'woocommerce' ),
-		                'desc' => 'This will change the "add to cart" label on bookable products that are shown on the archive page',
-		                'id'       => 'ngd_booking_button_text',
-		                'type'     => 'text',
-		                'placeholder' => 'Add to cart',
-		                'css'      => 'min-width:350px;',
-		            );
-
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Subscription products (archive)', 'woocommerce-subscriptions' ),
-		                'desc' => 'This will change the "add to cart" label on subscription products that are shown on the archive page',
-		                'id'       => 'ngd_subs_button_text',
-		                'type'     => 'text',
-		                'placeholder' => 'Sign up now',
-		                'css'      => 'min-width:350px;',
-		            );
-
-		        $wc_ngd_custom_section[] = array(
-		                'title'    => __( 'Variable subscription products (Archive)', 'woocommerce-subscriptions' ),
-		                'desc' => 'This will change the "add to cart" label on variable subscription products that are shown on the archive page',
-		                'id'       => 'ngd_subs_var_button_text',
-		                'type'     => 'text',
-		                'placeholder' => 'Sign up now',
-		                'css'      => 'min-width:350px;',
-		            );
-
-		        $wc_ngd_custom_section[] = array( 'type' => 'sectionend', 'id' => 'wc_ngd_change' );
-		        return $wc_ngd_custom_section;
-			} else {
-				return $settings;
-			}
-		}	
 		/**
-		 * Add Label settings
+		 * Change the plain add to cart text. Called by filters that pass ($text, $product).
+		 * Accepts two args for compatibility.
+		 *
+		 * @param string      $text
+		 * @param WC_Product|null $product
+		 * @return string
 		 */
-		public function wc_ngd_custom_add_to_cart_label_section( $sections ) {
-		    $sections['wc_ngd_custom_section'] = __( 'Custom Add to cart button labels', 'woocommerce' );
-		    return $sections;
+		public function change_add_to_cart_text( $text, $product = null ) {
+			// try to get global product when not passed
+			if ( ! $product instanceof WC_Product ) {
+				global $product;
+				if ( ! $product instanceof WC_Product ) {
+					return $text;
+				}
+			}
+
+			// single vs archive suffix
+			$suffix = is_product() ? '_single' : '';
+
+			$map = array(
+				'simple'                => "ngd_catcl_for_woo_simple_button_text{$suffix}",
+				'grouped'               => "ngd_catcl_for_woo_grouped_button_text{$suffix}",
+				'external'              => "ngd_catcl_for_woo_external_button_text{$suffix}",
+				'variable'              => "ngd_catcl_for_woo_variable_button_text{$suffix}",
+				'booking'               => "ngd_catcl_for_woo_booking_button_text{$suffix}",
+				'subscription'          => "ngd_catcl_for_woo_subs_button_text{$suffix}",
+				'variable-subscription' => "ngd_catcl_for_woo_subs_var_button_text{$suffix}",
+			);
+
+			$type = $product->get_type();
+
+			if ( isset( $map[ $type ] ) ) {
+				$custom = get_option( $map[ $type ], '' );
+				if ( is_string( $custom ) && '' !== trim( $custom ) ) {
+					return esc_html( $custom );
+				}
+			}
+
+			// fallback: return original text
+			return $text;
 		}
 
-		public function wc_ngd_custom_add_to_cart_label_text( $text ) {
-		    global $product;
+		/**
+		 * Replace the label inside the loop add to cart link HTML.
+		 *
+		 * @param string   $link
+		 * @param WC_Product $product
+		 * @param array    $args
+		 * @return string
+		 */
+		public function change_loop_add_to_cart_link( $link, $product = null, $args = array() ) {
+			if ( ! $product instanceof WC_Product ) {
+				return $link;
+			}
 
-		    if (!isset ($product) || !is_object ($product))
-		        return $text;
+			$original_text = method_exists( $product, 'add_to_cart_text' ) ? $product->add_to_cart_text() : __( 'Add to cart', 'ngd-custom-add-to-cart-label' );
 
-		    $product_type = $product->get_type();
+			$new_text = $this->change_add_to_cart_text( $original_text, $product );
 
-		    if (is_product()) {
+			if ( $new_text === $original_text ) {
+				return $link;
+			}
 
-			    switch ( $product_type ) {
-			        case 'simple':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_simple_button_text_single'), 'woocommerce' );
-			        break;
-			        case 'grouped':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_grouped_button_text_single'), 'woocommerce' );
-			        break;
-			        case 'external':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_external_button_text_single'), 'woocommerce' );
-			        break;
-			        case 'variable':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_variable_button_text_single'), 'woocommerce' );
-			        break;
-			        case 'booking':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_booking_button_text_single'), 'woocommerce-bookings' );
-			        break;
-			        case 'subscription':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_subs_button_text_single'), 'woocommerce-subscriptions' );
-			        break;
-			        case 'variable-subscription':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_subs_var_button_text_single'), 'woocommerce-subscriptions' );
-			        break;
-			        default:
-			            return __( 'Read more', 'woocommerce' );
-			     } 
-		    } else {
+			// Replace the visible text inside the first <a> or <button> tag (keeps inner HTML markup)
+			$link = preg_replace_callback( '#(<a\b[^>]*>|<button\b[^>]*>)(.*?)(</a>|</button>)#si', function( $m ) use ( $original_text, $new_text ) {
+				$inner = $m[2];
 
-			    switch ( $product_type ) {
-			        case 'simple':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_simple_button_text'), 'woocommerce' );
-			        break;
-			        case 'grouped':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_grouped_button_text'), 'woocommerce' );
-			        break;
-			        case 'external':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_external_button_text'), 'woocommerce' );
-			        break;
-			        case 'variable':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_variable_button_text'), 'woocommerce' );
-			        break;
-			        case 'booking':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_booking_button_text'), 'woocommerce-bookings' );
-			        break;
-			        case 'subscription':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_subs_button_text'), 'woocommerce-subscriptions' );
-			        break;
-			        case 'variable-subscription':
-			            return __( $options = $this->ngd_wc_get_settings( 'ngd_subs_var_button_text'), 'woocommerce-subscriptions' );
-			        break;
+				// If the plain original text exists inside the inner (strip tags) -> replace that text
+				if ( false !== strpos( wp_strip_all_tags( $inner ), $original_text ) ) {
+					// Replace only the plain text (not markup) occurrences - preserve any markup around it.
+					// Convert inner to plain & then replace occurrences inside inner (this keeps other markup intact).
+					$replaced = str_replace( $original_text, $new_text, $inner );
+					return $m[1] . $replaced . $m[3];
+				}
 
-			        default:
-			            return __( 'Read more', 'woocommerce' );
-			    }
-		     } 
+				return $m[0];
+			}, $link, 1 );
+
+			return $link;
 		}
 
-		public function ngd_wc_get_settings( $key ) {
-		    $saved = get_option( $key );
-		    if( $saved && '' != $saved ) {
-		        return $saved;
-		    }
-		    return __( 'Add to cart', 'woocommerce' );
+		/**
+		 * Replace text inside WooCommerce Blocks product grid HTML (Gutenberg).
+		 *
+		 * @param string $html
+		 * @param array  $data
+		 * @param WC_Product|null $product
+		 * @return string
+		 */
+		public function change_block_button_text( $html, $data = array(), $product = null ) {
+			if ( ! $product instanceof WC_Product ) {
+				return $html;
+			}
+
+			$original_text = method_exists( $product, 'add_to_cart_text' ) ? $product->add_to_cart_text() : __( 'Add to cart', 'ngd-custom-add-to-cart-label' );
+			$new_text      = $this->change_add_to_cart_text( $original_text, $product );
+
+			if ( $new_text === $original_text ) {
+				return $html;
+			}
+
+			// Similar safe replacement as loop link
+			$html = preg_replace_callback( '#(<a\b[^>]*>|<button\b[^>]*>)(.*?)(</a>|</button>)#si', function( $m ) use ( $original_text, $new_text ) {
+				$inner = $m[2];
+				if ( false !== strpos( wp_strip_all_tags( $inner ), $original_text ) ) {
+					$replaced = str_replace( $original_text, $new_text, $inner );
+					return $m[1] . $replaced . $m[3];
+				}
+				return $m[0];
+			}, $html, 1 );
+
+			return $html;
 		}
 
-	}
+	} // end class
+
+	// initialize
+	new NGD_Custom_Add_To_Cart_For_Woocommerce_Label();
 }
