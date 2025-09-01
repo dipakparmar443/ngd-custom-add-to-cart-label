@@ -13,7 +13,7 @@
  * License URI:     	 https://www.gnu.org/licenses/gpl-2.0.html 
  * Tested up to:    	 6.8.2
  * Version:         	 1.1
- * WC requires at least: 10.1.2
+ * WC requires at least: 7.1
  * WC tested up to: 	 10.1.2
  */
 

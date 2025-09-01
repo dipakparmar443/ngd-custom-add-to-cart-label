@@ -12,39 +12,35 @@ if ( ! class_exists( 'NGD_Custom_Add_To_Cart_For_Woocommerce_Label' ) ) {
 			// Only run when WooCommerce is active
 			if ( class_exists( 'WooCommerce' ) ) {
 				// Settings tab
-				add_filter( 'woocommerce_settings_tabs_array', array( $this, 'add_custom_tab' ), 50 );
-				add_action( 'woocommerce_settings_tabs_ngd_catcl_for_woo_custom_tab', array( $this, 'tab_content' ) );
-				add_action( 'woocommerce_update_options_ngd_catcl_for_woo_custom_tab', array( $this, 'save_settings' ) );
+				add_filter( 'woocommerce_settings_tabs_array', array( $this, 'ngd_catcl_for_woo_add_custom_tab' ), 50 );
+				add_action( 'woocommerce_settings_tabs_ngd_catcl_for_woo_custom_tab', array( $this, 'ngd_catcl_for_woo_tab_content' ) );
+				add_action( 'woocommerce_update_options_ngd_catcl_for_woo_custom_tab', array( $this, 'ngd_catcl_for_woo_save_settings' ) );
 
 				// Text filters (allow 2 args where available)
-				add_filter( 'woocommerce_product_single_add_to_cart_text', array( $this, 'change_add_to_cart_text' ), 10, 2 );
-				add_filter( 'woocommerce_product_add_to_cart_text', array( $this, 'change_add_to_cart_text' ), 10, 2 );
+				add_filter( 'woocommerce_product_single_add_to_cart_text', array( $this, 'ngd_catcl_for_woo_change_add_to_cart_text' ), 10, 2 );
+				add_filter( 'woocommerce_product_add_to_cart_text', array( $this, 'ngd_catcl_for_woo_change_add_to_cart_text' ), 10, 2 );
 
 				// Loop (archive / shop / shortcodes)
-				add_filter( 'woocommerce_loop_add_to_cart_link', array( $this, 'change_loop_add_to_cart_link' ), 10, 3 );
+				add_filter( 'woocommerce_loop_add_to_cart_link', array( $this, 'ngd_catcl_for_woo_change_loop_add_to_cart_link' ), 10, 3 );
 
 				// WooCommerce Blocks (Gutenberg)
-				add_filter( 'woocommerce_blocks_product_grid_item_html', array( $this, 'change_block_button_text' ), 10, 3 );
+				add_filter( 'woocommerce_blocks_product_grid_item_html', array( $this, 'ngd_catcl_for_woo_change_block_button_text' ), 10, 3 );
 
 				// Backwards compatibility / bookings, etc (some plugins use custom filters)
-				add_filter( 'woocommerce_booking_single_add_to_cart_text', array( $this, 'change_add_to_cart_text' ) );
+				add_filter( 'woocommerce_booking_single_add_to_cart_text', array( $this, 'ngd_catcl_for_woo_change_add_to_cart_text' ) );
 			}
 		}
 
-		/* ---------------------------
-		 * Settings: tab + fields
-		 * --------------------------- */
-
-		public function add_custom_tab( $tabs ) {
+		public function ngd_catcl_for_woo_add_custom_tab( $tabs ) {
 			$tabs['ngd_catcl_for_woo_custom_tab'] = __( 'NGD Custom Add to Cart Label for WooCommerce', 'ngd-custom-add-to-cart-label' );
 			return $tabs;
 		}
 
-		public function tab_content() {
+		public function ngd_catcl_for_woo_tab_content() {
 			woocommerce_admin_fields( $this->get_settings() );
 		}
 
-		public function save_settings() {
+		public function ngd_catcl_for_woo_save_settings() {
 			woocommerce_update_options( $this->get_settings() );
 		}
 
@@ -154,11 +150,6 @@ if ( ! class_exists( 'NGD_Custom_Add_To_Cart_For_Woocommerce_Label' ) ) {
 			return $settings;
 		}
 
-
-		/* ---------------------------
-		 * Core text replacement logic
-		 * --------------------------- */
-
 		/**
 		 * Change the plain add to cart text. Called by filters that pass ($text, $product).
 		 * Accepts two args for compatibility.
@@ -167,7 +158,7 @@ if ( ! class_exists( 'NGD_Custom_Add_To_Cart_For_Woocommerce_Label' ) ) {
 		 * @param WC_Product|null $product
 		 * @return string
 		 */
-		public function change_add_to_cart_text( $text, $product = null ) {
+		public function ngd_catcl_for_woo_change_add_to_cart_text( $text, $product = null ) {
 			// try to get global product when not passed
 			if ( ! $product instanceof WC_Product ) {
 				global $product;
@@ -210,14 +201,14 @@ if ( ! class_exists( 'NGD_Custom_Add_To_Cart_For_Woocommerce_Label' ) ) {
 		 * @param array    $args
 		 * @return string
 		 */
-		public function change_loop_add_to_cart_link( $link, $product = null, $args = array() ) {
+		public function ngd_catcl_for_woo_change_loop_add_to_cart_link( $link, $product = null, $args = array() ) {
 			if ( ! $product instanceof WC_Product ) {
 				return $link;
 			}
 
 			$original_text = method_exists( $product, 'add_to_cart_text' ) ? $product->add_to_cart_text() : __( 'Add to cart', 'ngd-custom-add-to-cart-label' );
 
-			$new_text = $this->change_add_to_cart_text( $original_text, $product );
+			$new_text = $this->ngd_catcl_for_woo_change_add_to_cart_text( $original_text, $product );
 
 			if ( $new_text === $original_text ) {
 				return $link;
@@ -227,10 +218,7 @@ if ( ! class_exists( 'NGD_Custom_Add_To_Cart_For_Woocommerce_Label' ) ) {
 			$link = preg_replace_callback( '#(<a\b[^>]*>|<button\b[^>]*>)(.*?)(</a>|</button>)#si', function( $m ) use ( $original_text, $new_text ) {
 				$inner = $m[2];
 
-				// If the plain original text exists inside the inner (strip tags) -> replace that text
 				if ( false !== strpos( wp_strip_all_tags( $inner ), $original_text ) ) {
-					// Replace only the plain text (not markup) occurrences - preserve any markup around it.
-					// Convert inner to plain & then replace occurrences inside inner (this keeps other markup intact).
 					$replaced = str_replace( $original_text, $new_text, $inner );
 					return $m[1] . $replaced . $m[3];
 				}
@@ -249,13 +237,13 @@ if ( ! class_exists( 'NGD_Custom_Add_To_Cart_For_Woocommerce_Label' ) ) {
 		 * @param WC_Product|null $product
 		 * @return string
 		 */
-		public function change_block_button_text( $html, $data = array(), $product = null ) {
+		public function ngd_catcl_for_woo_change_block_button_text( $html, $data = array(), $product = null ) {
 			if ( ! $product instanceof WC_Product ) {
 				return $html;
 			}
 
 			$original_text = method_exists( $product, 'add_to_cart_text' ) ? $product->add_to_cart_text() : __( 'Add to cart', 'ngd-custom-add-to-cart-label' );
-			$new_text      = $this->change_add_to_cart_text( $original_text, $product );
+			$new_text      = $this->ngd_catcl_for_woo_change_add_to_cart_text( $original_text, $product );
 
 			if ( $new_text === $original_text ) {
 				return $html;
