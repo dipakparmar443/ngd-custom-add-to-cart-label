@@ -53,14 +53,14 @@ WooCommerce – Custom "Add To Cart" labels on single product pages (per product
 
 1. Download the plugin & install it to your `wp-content/plugins` folder (or use the Plugins menu through the WordPress Administration section).
 2. Activate the plugin.
-3. Navigate to **WooCommerce > Settings > Products > Custom Add to Cart button labels**.
+3. Navigate to **WooCommerce > Settings > NGD Custom Add to Cart Label for WooCommerce**.
 4. Customize your labels as needed.
 5. Save settings and check your store!
 
 == Frequently Asked Questions ==
 
 = How to use this plugin? =
-Once activated, go to **WooCommerce > Settings > Products > Custom Add to Cart button labels**.  
+Once activated, go to **WooCommerce > Settings > NGD Custom Add to Cart Label for WooCommerce**.  
 Here you can set custom button labels for each product type across shop, category, and single product pages.
 
 = Does it support Variable and Grouped products? =
