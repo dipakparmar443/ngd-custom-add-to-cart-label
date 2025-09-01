@@ -87,10 +87,10 @@ Yes, this plugin is 100% free and open source.
 
 ## Changelog
 
-### 1.0
-- Initial release.
-
 ### 1.1
 - Updated compatibility with WooCommerce 10.1.2 and WordPress 6.8.2.  
 - Improved PHP compatibility (7.4 or higher).  
 - Minor bug fixes.
+
+### 1.0
+- Initial release.
